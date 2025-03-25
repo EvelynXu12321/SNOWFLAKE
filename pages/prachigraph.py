@@ -10,6 +10,7 @@ import numpy as np
 import branca.colormap as bcm
 from folium import CircleMarker, PolyLine
 from geopy.geocoders import Nominatim  # For address geocoding
+import requests
 import geopandas as gpd
 import joblib
 from shapely.geometry import Point
