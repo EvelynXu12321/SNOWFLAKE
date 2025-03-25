@@ -9,11 +9,10 @@ import matplotlib.colors as mcolors
 import numpy as np
 import branca.colormap as bcm
 from folium import CircleMarker, PolyLine
-import random  # For generating random colors
 from geopy.geocoders import Nominatim  # For address geocoding
 import geopandas as gpd
 import joblib
-from shapely.geometry import Point 
+from shapely.geometry import Point
 
 st.set_page_config(layout="wide")
 
@@ -25,8 +24,14 @@ def load_florida_gdf_geojson():
 
 @st.cache_data
 def load_coastline_data():
-    coastline_gdf = gpd.read_file('/Users/prachiheda/Desktop/Florida_Shoreline_(1_to_2%2C000%2C000_Scale)/Florida_Shoreline_(1_to_2%2C000%2C000_Scale).shp')
-    return coastline_gdf.to_crs('EPSG:3086')  # Project to Florida's CRS
+    coastline_gdf = gpd.read_file('Florida_Shoreline.shp')
+
+    # If the CRS is not detected, set it manually
+    if coastline_gdf.crs is None:
+        coastline_gdf.set_crs('EPSG:4326', inplace=True)  # Assuming it's in WGS84 (Latitude/Longitude)
+
+    # Now convert to Florida's CRS
+    return coastline_gdf.to_crs('EPSG:3086')
 
 @st.cache_data
 def load_hurricane_data():
@@ -292,7 +297,7 @@ for idx, row in facilities_df_filtered.iterrows():
     else:
         # Use the color mapping based on facility type if risk score is missing
         color = layer_map.get(row['type'], '#000000')  # Default to black
-    
+
     # Add a CircleMarker to the map
     CircleMarker(
         location=[row['latitude'], row['longitude']],
@@ -325,7 +330,7 @@ for hurricane in selected_hurricanes:
     hurricane_df = filtered_hurricane_data[filtered_hurricane_data['storm_name'] == hurricane]
     coordinates = hurricane_df[['latitude', 'longitude']].values.tolist()
     color = hurricane_colors[hurricane]
-    
+
     # Add the hurricane path as a PolyLine
     folium.PolyLine(
         locations=coordinates,
@@ -344,14 +349,14 @@ for idx, row in special_events_df.iterrows():
     wind_speed = row['max_wind']
     pressure = row['min_pressure']
     hurricane = row['storm_name']
-    
+
     popup_content = (
         f"<b>Hurricane:</b> {hurricane}<br>"
         f"<b>Event:</b> {event_label}<br>"
         f"<b>Wind Speed:</b> {wind_speed} kt<br>"
         f"<b>Pressure:</b> {pressure} mb"
     )
-    
+
     folium.CircleMarker(
         location=[row['latitude'], row['longitude']],
         radius=8,
