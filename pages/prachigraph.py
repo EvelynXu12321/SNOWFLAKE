@@ -9,7 +9,6 @@ import matplotlib.colors as mcolors
 import numpy as np
 import branca.colormap as bcm
 from folium import CircleMarker, PolyLine
-from geopy.geocoders import Nominatim  # For address geocoding
 import requests
 import geopandas as gpd
 import joblib
@@ -102,10 +101,6 @@ hurricane_data = filtered_hurricane_data
 st.title("Florida Social Vulnerability Index, Facility Risk Map, and Hurricane Paths")
 
 st.sidebar.title("Filters")
-# User input for address
-st.sidebar.subheader("Enter Address to Predict Risk Score")
-address = st.sidebar.text_input("Address", placeholder="Enter a valid address in Florida")
-
 
 # Facility type filter
 facility_types = facilities_df['type'].unique()
@@ -127,7 +122,6 @@ selected_hurricanes = st.sidebar.multiselect(
 # Filter facilities based on selection
 facilities_df_filtered = facilities_df[facilities_df['type'].isin(selected_types)]
 
-
 # Normalize risk scores for coloring
 risk_scores = facilities_df_filtered['risk_score']
 norm = plt.Normalize(vmin=risk_scores.min(), vmax=risk_scores.max())
@@ -135,18 +129,31 @@ cmap = plt.get_cmap('YlOrRd')
 
 # Initialize the map
 m = folium.Map(location=[27.5, -82], zoom_start=6)
-# Initialize geolocator
-geolocator = Nominatim(user_agent="risk_score_app")
 
-if st.sidebar.button("Calculate Risk Score") and address:
+# User input for address
+st.sidebar.subheader("Enter Address to Predict Risk Score")
+address = st.sidebar.text_input("Address", placeholder="Enter a valid address in Florida")
+
+if st.sidebar.button("Calculate Risk Score"):
+    # We use Streamlit session state to persist errors across submissions
+    if address:
+        st.session_state['address'] = address
+        st.session_state['submit_clicked'] = True
+
+if 'submit_clicked' in st.session_state and st.session_state['submit_clicked']:
+    converted_address = st.session_state['address'].strip().replace(" ", "+")
+    url = f"https://nominatim.openstreetmap.org/search?q={converted_address}&format=json"
+    headers = {"User-Agent": "streamlitapp/1.0"}
     try:
-        # Geocode the address
-        location = geolocator.geocode(address)
-        if not location:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        if not data:
             st.error("Could not geocode the address. Please try a different one.")
         else:
-            st.success(f"Address geocoded successfully: {location.address}")
-            user_point = Point(location.longitude, location.latitude)
+            first = data[0]
+            st.success(f"Address geocoded successfully: {first['display_name']}")
+            user_point = Point(first['lon'], first['lat'])
 
             # Reproject the user point to the projected CRS
             user_geom = gpd.GeoDataFrame(
@@ -182,14 +189,18 @@ if st.sidebar.button("Calculate Risk Score") and address:
                 'hurricane_exposure': [hurricane_exposure],
                 'RPL_THEMES': [svi_score]
             })
-            predicted_risk_score = model.predict(features)[0] + 0.5
+            predicted_risk_score = 0
+            if np.isfinite(features.values).all():
+                predicted_risk_score = model.predict(features)[0] + 0.5
+            else:
+                st.error("The feature values contain invalid entries. Please check the input data.")
 
             # Display the results
             st.sidebar.success(f"Predicted Risk Score: {predicted_risk_score:.2f}")
 
             # Add user location to the map
             folium.CircleMarker(
-                location=[location.latitude, location.longitude],
+                location=[first['lat'], first['lon']],
                 radius=8,
                 color='blue',
                 fill=True,
@@ -198,10 +209,8 @@ if st.sidebar.button("Calculate Risk Score") and address:
                 popup=f"<b>Predicted Risk Score:</b> {predicted_risk_score:.2f}"
             ).add_to(m)
             st_folium(m, width=800, height=600)
-
     except Exception as e:
-        st.error(f"An error occurred: {e}")
-
+        st.error(f"An error occurred during geocoding: {e}")
 
 # if st.sidebar.button("Calculate Risk Score") and address:
 #     try:
