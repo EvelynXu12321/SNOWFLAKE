@@ -7,3 +7,7 @@ matplotlib
 requests
 geopy
 geopandas
+numpy
+branca
+joblib
+shapely

@@ -40,7 +40,7 @@ While hurricanes are unavoidable, their impacts can be mitigated by addressing s
 2. Run the app
 
    ```
-   $ streamlit run main_page.py
+   $ streamlit run main.py
    ```
 
 ## Usage
@@ -171,9 +171,9 @@ Both models were trained using supervised learning techniques on datasets such a
 
 ## Acknowledgements
 
-This project would not have been possible without the support and contributions of many individuals and tools. We would like to express our gratitude to the Break Through Tech AI studio program at UCLA for providing the opportunity and resources to bring this project to life. Special thanks to our Challenge Advisor, [Joe Webington](https://www.linkedin.com/in/warbington) from Snowflake, for his guidance and expertise throughout the project. 
+This project would not have been possible without the support and contributions of many individuals and tools. We would like to express our gratitude to the Break Through Tech AI studio program at UCLA for providing the opportunity and resources to bring this project to life. Special thanks to our Challenge Advisor, [Joe Warbington](https://www.linkedin.com/in/warbington) from Snowflake, for his guidance and expertise throughout the project. 
 
-Our dedicated team – [Ella Chung (UCI)](https://www.linkedin.com/in/ella-lynn-chung/),[Eric Lu (UCLA)](https://www.linkedin.com/in/ericslu/), [Evelyn Xu (UCLA)](https://www.linkedin.com/in/evelyn-xu-ucla/), [Prachi Heda (UCSD)](https://www.linkedin.com/in/prachi-heda-bb281720b/), and [Kaleo Cao (UCSD)](https://www.linkedin.com/in/cyc2025/) –worked collaboratively to achieve our goals and deliver meaningful outcomes.
+Our dedicated team – [Ella Chung (UCI)](https://www.linkedin.com/in/ella-lynn-chung/), [Eric Lu (UCLA)](https://www.linkedin.com/in/ericslu/), [Evelyn Xu (UCLA)](https://www.linkedin.com/in/evelyn-xu-ucla/), [Prachi Heda (UCSD)](https://www.linkedin.com/in/prachi-heda-bb281720b/), and [Kaleo Cao (UCSD)](https://www.linkedin.com/in/cyc2025/) – worked collaboratively to achieve our goals and deliver meaningful outcomes.
 
 We want to give a shout out to the tools and libraries that were essential to making this project happen, including Snowflake, scikit-learn (Snowflake.ml.modeling library), SQL, Streamlit, Snowflake Marketplace, and Snowflake Notebook, which provided the technical foundation for our analyses and interactive tools.
 
