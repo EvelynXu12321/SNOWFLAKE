@@ -21,6 +21,8 @@ def load_florida_gdf_geojson():
     # Load GeoJSON directly as GeoDataFrame
     return gpd.read_file('florida_gdf.geojson')
 
+def debug_log(message):
+    st.write(f"### Debug: {message}")
 
 @st.cache_data
 def load_coastline_data():
@@ -152,124 +154,70 @@ if 'submit_clicked' in st.session_state and st.session_state['submit_clicked']:
             st.error("Could not geocode the address. Please try a different one.")
         else:
             first = data[0]
+            print(first)
             st.success(f"Address geocoded successfully: {first['display_name']}")
-            user_point = Point(first['lon'], first['lat'])
+            user_lat = float(first['lat'])
+            user_lon = float(first['lon'])
+            user_point = Point(float(first['lon']), float(first['lat']))
+            address_display = first['display_name']
+            # debug_log(f"User point created: {user_point}")
 
-            # Reproject the user point to the projected CRS
-            user_geom = gpd.GeoDataFrame(
-                geometry=[user_point], crs='EPSG:4326'
-            ).to_crs('EPSG:3086')
+            user_geom = gpd.GeoDataFrame(geometry=[user_point], crs='EPSG:4326')
+            user_geom_projected = user_geom.to_crs('EPSG:3086')
 
-            # Calculate distance to coastline
-            user_geom_projected = user_geom.iloc[0].geometry
-            distance_to_coast_km = coastline_projected.distance(user_geom_projected).min() / 1000
+            # Calculate Distance to Coastline
+            try:
+                distance_to_coast_km = coastline_projected.distance(user_geom_projected.iloc[0].geometry).min() / 1000
+                if np.isinf(distance_to_coast_km):
+                    distance_to_coast_km = 200.0  # Fallback value if calculation fails
+                    # debug_log("Distance calculation resulted in infinity. Using fallback value: 200 km")
+                # else:
+                    # debug_log(f"Calculated distance to coastline: {distance_to_coast_km} km")
+            except Exception as e:
+                distance_to_coast_km = 200.0  # Safe fallback value
+                # debug_log(f"Error calculating distance to coastline: {e}. Using fallback value: 200 km")
 
-            # Calculate hurricane exposure using a spatial join
-            user_buffered = user_geom.buffer(50000)  # Buffer by 50 km
+            # Calculate Hurricane Exposure
+            user_buffered = user_geom_projected.buffer(50000)  # 50 km buffer around the point
             user_buffered_gdf = gpd.GeoDataFrame(geometry=user_buffered, crs='EPSG:3086')
             hurricanes_exposed = gpd.sjoin(
                 user_buffered_gdf, hurricane_gdf_projected, how="inner", predicate="intersects"
             )
             hurricane_exposure = hurricanes_exposed['storm_name'].nunique()
+            # debug_log(f"Number of hurricanes exposed: {hurricane_exposure}")
 
-            # Get SVI score using a spatial join
+            # Spatial join to obtain SVI Score
             user_geom_reprojected = user_geom.to_crs(florida_gdf.crs)
-            svi_match = gpd.sjoin(
-                user_geom_reprojected, florida_gdf[['geometry', 'RPL_THEMES']], how="inner", predicate="intersects"
-            )
+            svi_match = gpd.sjoin(user_geom_reprojected, florida_gdf[['geometry', 'RPL_THEMES']], how="inner", predicate="intersects")
+
             if svi_match.empty:
                 st.error("No matching county found for the input address.")
-                svi_score = 0  # Default or error value
             else:
                 svi_score = svi_match['RPL_THEMES'].values[0]
 
-            # Prepare features and make prediction
-            features = pd.DataFrame({
-                'distance_to_coast_km': [distance_to_coast_km],
-                'hurricane_exposure': [hurricane_exposure],
-                'RPL_THEMES': [svi_score]
-            })
-            predicted_risk_score = 0
-            if np.isfinite(features.values).all():
-                predicted_risk_score = model.predict(features)[0] + 0.5
-            else:
-                st.error("The feature values contain invalid entries. Please check the input data.")
+                features = pd.DataFrame({
+                    'distance_to_coast_km': [distance_to_coast_km],
+                    'hurricane_exposure': [hurricane_exposure],
+                    'RPL_THEMES': [svi_score]
+                })
+                # debug_log(f"Features prepared for prediction: {features}")
 
+                if np.isfinite(features.values).all():
+                    predicted_risk_score = model.predict(features)[0] + 0.5
+                    st.sidebar.success(f"Predicted Risk Score: {predicted_risk_score:.2f}")
+                else:
+                    st.error("The feature values contain invalid entries. Please check the input data.")
             # Display the results
             st.sidebar.success(f"Predicted Risk Score: {predicted_risk_score:.2f}")
 
             # Add user location to the map
-            folium.CircleMarker(
-                location=[first['lat'], first['lon']],
-                radius=8,
-                color='blue',
-                fill=True,
-                fill_color='blue',
-                fill_opacity=0.6,
-                popup=f"<b>Predicted Risk Score:</b> {predicted_risk_score:.2f}"
+            folium.Marker(
+                location=[user_lat, user_lon],
+                popup=f"<b>Address:</b> {address_display}<br><b>Predicted Risk Score:</b> {predicted_risk_score:.2f}",
+                icon=folium.Icon(color='blue')
             ).add_to(m)
-            st_folium(m, width=800, height=600)
     except Exception as e:
         st.error(f"An error occurred during geocoding: {e}")
-
-# if st.sidebar.button("Calculate Risk Score") and address:
-#     try:
-#         # Geocode the address
-#         location = geolocator.geocode(address)
-#         if not location:
-#             st.error("Could not geocode the address. Please try a different one.")
-#         else:
-#             st.success(f"Address geocoded successfully: {location.address}")
-#             user_point = Point(location.longitude, location.latitude)
-
-#             # Calculate distance to coastline
-#             user_geom = gpd.GeoSeries([user_point], crs='EPSG:4326').to_crs('EPSG:3086')
-#             if coastline_projected.empty:
-#                 st.error("No coastline data available.")
-#             distance_to_coast_km = coastline_projected.distance(user_geom.iloc[0]).min() / 1000
-
-#             # Calculate hurricane exposure
-#             hurricane_exposure = hurricane_gdf_projected[
-#                 hurricane_gdf_projected.contains(user_geom.iloc[0])
-#             ]['storm_name'].nunique()
-#             if hurricane_exposure == 0:
-#                 st.warning("No hurricane exposure data found. Defaulting to 0.")
-#                 hurricane_exposure = 0
-
-#             # Get SVI score
-#             user_geom = user_geom.to_crs(florida_gdf.crs)
-#             matching_counties = florida_gdf[florida_gdf.contains(user_geom.iloc[0])]
-#             if matching_counties.empty:
-#                 st.error("No matching county found for the input address.")
-#             svi_score = matching_counties['RPL_THEMES'].values[0]
-
-#             # Prepare features and make prediction
-#             features = pd.DataFrame({
-#                 'distance_to_coast_km': [distance_to_coast_km],
-#                 'hurricane_exposure': [hurricane_exposure],
-#                 'RPL_THEMES': [svi_score]
-#             })
-#             predicted_risk_score = model.predict(features)[0] + 0.5
-
-#             # Display the results
-#             st.sidebar.success(f"Predicted Risk Score: {predicted_risk_score:.2f}")
-
-#             # Add user location to the map
-#             m = folium.Map(location=[location.latitude, location.longitude], zoom_start=10)
-#             CircleMarker(
-#                 location=[location.latitude, location.longitude],
-#                 radius=8,
-#                 color='blue',
-#                 fill=True,
-#                 fill_color='blue',
-#                 fill_opacity=0.6,
-#                 popup=f"<b>Predicted Risk Score:</b> {predicted_risk_score:.2f}"
-#             ).add_to(m)
-#             st_folium(m, width=800, height=600)
-
-#     except Exception as e:
-#         st.error(f"An error occurred: {e}")
-
 
 # Add SVI Choropleth Layer
 folium.Choropleth(
