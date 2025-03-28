@@ -29,10 +29,11 @@ st.subheader("🔬 How Our Prediction Model Works")
 st.markdown(
     """
     Our model uses machine learning to assess social vulnerability based on multiple datasets, including:
+    - **📍 FEMA National Risk Index (NRI)** – Assess risk scores and expected annual losses from hurricanes and other natural hazards
     - **📊 Social Vulnerability Index (SVI)** – Population demographics, income, and disabilities
     - **🌀 HURDAT2 Hurricane Data** – Historical hurricane paths & intensities
-    - **🏥 Healthcare Access Data** – Number of hospitals, clinics, and emergency services
-    - **🏚️ Infrastructure Risk Scores** – Housing conditions and structural resilience
+    - **🏥 Diversity, Equity, and Inclusion - Social Determinants of Health** – Insights into social determinants like income, education, and healthcare access
+    - **🏚️ Critical Facilities in Florida (Overpass Turbo)** – Location data for critical facilities like hospitals, clinics, and shelters
     """
 )
 
@@ -99,6 +100,14 @@ st.markdown(
     **Community support programs can help during disasters:**
     - **[FEMA Disaster Assistance](https://www.fema.gov/assistance/individual)**
     - **[American Red Cross Find Nearby Shelters](https://www.redcross.org/get-help/how-to-prepare-for-emergencies/types-of-emergencies/hurricane.html)**
+    """
+)
+
+st.subheader("📌 Project Repository")
+
+st.markdown(
+    """
+    View the full codebase on [GitHub](https://github.com/your-repo-link).
     """
 )
 
