@@ -1,5 +1,5 @@
 .streamlit/secrets.toml
-
+pages/apikey.*
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
