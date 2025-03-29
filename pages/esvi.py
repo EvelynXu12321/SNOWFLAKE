@@ -1,6 +1,9 @@
 import streamlit as st
 from google import genai
 
+# The majority of this code is built upon Streamlit's amazing article on LLM Apps:
+# https://docs.streamlit.io/develop/tutorials/chat-and-llm-apps/build-conversational-apps
+
 # Page configuration
 st.set_page_config(
     page_title="Esvi - Hurricane Safety Education Assistant",
@@ -11,14 +14,11 @@ st.set_page_config(
 st.title("🌀 Esvi - Hurricane Safety Education Assistant")
 st.markdown("Ask questions about hurricane damage prevention and get educational information.")
 
-# API key handling
-st.warning("Note: To use this feature, you must upload your own API key for Google Gemini. This information is not stored anywhere.")
-st.link_button('Get a Gemini API Key', 'https://aistudio.google.com/')
-
-# API key input
+# User inputs API Key, below code will not run until it works
 key = st.text_input("Enter your Google Gemini API key:", type="password")
 if not key:
     st.info("Please enter your Google Gemini API key to start chatting with Esvi.")
+    st.link_button('Get a Gemini API Key', 'https://aistudio.google.com/')
     st.stop()
 
 # Initialize Gemini client
@@ -28,10 +28,8 @@ except Exception as e:
     st.error(f"Error initializing Gemini client: {str(e)}")
     st.stop()
 
-# Default initial assistant message
 INITIAL_PROMPT = "Hi! I'm Esvi, your assistant for hurricane safety and disaster preparedness. How can I help you today?"
 
-# Hidden system prompt
 SYSTEM_PROMPT = """You are Esvi, a friendly and educational AI assistant focused on hurricane safety, disaster preparedness, and social vulnerability education. Your main goals are:
 • Educate users about hurricane safety measures and disaster preparedness.
 • Provide insights into social vulnerability and how it impacts disaster response.
@@ -40,7 +38,7 @@ SYSTEM_PROMPT = """You are Esvi, a friendly and educational AI assistant focused
 
 Key guidelines:
 • Keep responses concise and easy to understand.
-• Use bullet points for clarity when listing information.
+• Respond in bulleted lists when convenient
 • Provide actionable advice for hurricane preparedness and safety.
 • Redirect users to hurricane-related topics if they ask about unrelated subjects.
 • Remind users that this is for educational purposes only and they should consult local authorities or experts for personalized advice.
@@ -53,32 +51,20 @@ Example redirection: "While I understand your interest in [unrelated topic], I'm
 
 Remember: Always encourage consulting local authorities or experts for personalized advice."""
 
-# Initialize the model with system prompt
-try:
-    client.models.generate_content(model="gemini-1.5-flash", contents=SYSTEM_PROMPT)
-except Exception as e:
-    error_message = str(e)
-    if "API key not valid" in error_message:
-        st.error("Error initializing model: Invalid API key. Please provide a valid API key.")
-    else:
-        st.error(f"Error initializing model: {error_message}")
-    st.stop()
+# SIDEBAR
+with st.sidebar:
+    model = st.selectbox(
+        "How would you like to be contacted?",
+        ("gemini-1.5-flash", "gemini-2.0-flash"),
+    )
 
-# Initialize session state for chat history
-if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},  # Hidden system prompt
-        {"role": "assistant", "content": INITIAL_PROMPT}  # Visible initial assistant message
-    ]
-
-# Add a button to clear the conversation in the sidebar
 if st.sidebar.button("Start New Chat"):
     st.session_state.messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},  # Hidden system prompt
-        {"role": "assistant", "content": INITIAL_PROMPT}  # Visible initial assistant message
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "assistant", "content": INITIAL_PROMPT}
     ]
     try:
-        client.models.generate_content(model="gemini-1.5-flash", contents=SYSTEM_PROMPT)
+        client.models.generate_content(model=model, contents=SYSTEM_PROMPT)
     except Exception as e:
         error_message = str(e)
         if "API key not valid" in error_message:
@@ -86,7 +72,6 @@ if st.sidebar.button("Start New Chat"):
         else:
             st.error(f"Error resetting chat: {error_message}")
 
-# Add sidebar information
 with st.sidebar:
     st.markdown("---")
     st.markdown("""
@@ -98,6 +83,24 @@ with st.sidebar:
     
     *For educational purposes only. Always consult local authorities or experts for personalized advice.*
     """)
+
+# Initialize the model with system prompt
+try:
+    client.models.generate_content(model=model, contents=SYSTEM_PROMPT)
+except Exception as e:
+    error_message = str(e)
+    if "API key not valid" in error_message:
+        st.error("Error initializing model: Invalid API key. Please provide a valid API key.")
+    else:
+        st.error(f"Error initializing model: {error_message}")
+    st.stop()
+
+# Initialize session state for chat history
+if "messages" not in st.session_state:
+    st.session_state.messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "assistant", "content": INITIAL_PROMPT}
+    ]
 
 # Display chat history in a chat-like format (exclude system messages)
 for message in st.session_state.messages:
@@ -131,8 +134,13 @@ if prompt := st.chat_input("Ask about hurricane safety or disaster preparedness.
                     contents=conversation_history
                 )
                 
-                # Format response to ensure bullet points are displayed correctly
-                assistant_response = response.text.replace("* ", "• ")
+                # Format response
+                assistant_response = (
+                    response.text
+                    .replace("\n* ", "\n• ")  # Convert single asterisks used for bullet points to proper bullets
+                    .replace("**", "**")      # Preserve existing bold syntax
+                    .replace("\n", "\n\n")    # Add spacing between paragraphs
+                )
                 st.markdown(assistant_response)
             except Exception as e:
                 error_message = str(e)
