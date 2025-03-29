@@ -12,11 +12,11 @@ st.set_page_config(layout="wide", page_title="SVI & EAL Map of Florida", page_ic
 st.markdown("""
     <style>
     .main {
-        background-color: #333333;  /* Dark gray background for contrast */
+        background-color:
     }
     .title, .description, .map-title {
         text-align: center;
-        color: #ffffff;  /* Set text color to white */
+        color:
     }
     .title {
         font-size: 2.5em;
@@ -34,7 +34,7 @@ st.markdown("""
         margin-top: 1em;
     }
     .faq {
-        background-color: #555555;
+        background-color: #f0f2f6;
         padding: 20px;
         border-radius: 10px;
         margin: 20px auto;

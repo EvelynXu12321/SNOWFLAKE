@@ -1,6 +1,5 @@
 import streamlit as st
 
-
 st.title("Information & Resources")
 
 # what is social vulnerability
@@ -107,7 +106,7 @@ st.subheader("📌 Project Repository")
 
 st.markdown(
     """
-    View the full codebase on [GitHub](https://github.com/your-repo-link).
+    View the full codebase on [GitHub](https://github.com/EvelynXu12321/SNOWFLAKE).
     """
 )
 

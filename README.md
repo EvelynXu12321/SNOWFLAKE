@@ -40,7 +40,7 @@ While hurricanes are unavoidable, their impacts can be mitigated by addressing s
 2. Run the app
 
    ```
-   $ streamlit run main.py
+   $ streamlit run Info.py
    ```
 
 ## Usage
