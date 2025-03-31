@@ -11,3 +11,4 @@ numpy
 branca
 joblib
 shapely
+google-genai
